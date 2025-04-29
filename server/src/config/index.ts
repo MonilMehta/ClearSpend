@@ -18,6 +18,9 @@ const config = {
     server: {
         port: process.env.PORT || 5000,
     },
+    telegram: {
+        botToken: process.env.TELEGRAM_BOT_TOKEN,
+    },
 };
 
 export default config;
