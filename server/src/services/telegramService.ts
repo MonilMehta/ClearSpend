@@ -1,4 +1,3 @@
-
 import TelegramBot from 'node-telegram-bot-api';
 import { config } from '../config';
 
@@ -33,6 +32,35 @@ export const sendTelegramMessage = async (chatId: number, text: string): Promise
 };
 
 /**
+ * Sends a message asking the user to share their phone number via a button.
+ * @param chatId The numeric chat ID to send the request to.
+ */
+export const requestContactInfo = async (chatId: number): Promise<void> => {
+    if (!config.telegram.botToken) {
+        console.error('Cannot request contact info: Bot Token is not configured.');
+        return;
+    }
+    try {
+        const opts: TelegramBot.SendMessageOptions = {
+            reply_markup: {
+                keyboard: [
+                    [{
+                        text: 'Share Phone Number',
+                        request_contact: true, // This creates the special button
+                    }],
+                ],
+                resize_keyboard: true,
+                one_time_keyboard: true, // Hide keyboard after use
+            },
+        };
+        await bot.sendMessage(chatId, 'To link your account, please share your phone number using the button below.', opts);
+        console.log(`Requested contact info from chat ID ${chatId}`);
+    } catch (error: any) {
+        console.error(`Error requesting contact info from chat ID ${chatId}:`, error.message);
+    }
+};
+
+/**
  * Sets the webhook for the Telegram bot.
  * Should be called once during application startup.
  * @param webhookUrl The publicly accessible URL for your webhook endpoint (e.g., https://your-app.com/api/webhook/telegram)
@@ -62,6 +90,7 @@ export const setTelegramWebhook = async (webhookUrl: string): Promise<void> => {
 
 /**
  * Processes an incoming update object from the Telegram webhook.
+ * Identifies regular messages and contact sharing messages.
  * @param update The update object received from Telegram.
  * @returns TelegramBot.Message | null The relevant message object if found, otherwise null.
  */
@@ -75,8 +104,17 @@ export const processTelegramUpdate = (update: any): TelegramBot.Message | null =
     // Log the received update for debugging
     // console.log('Received Telegram Update:', JSON.stringify(update, null, 2));
 
-    // We are primarily interested in messages (text, audio, photo)
+    // Check for a message (could be text, audio, photo, contact, etc.)
     if (update.message) {
+        // Specifically check if the message contains contact information
+        if (update.message.contact) {
+            console.log(`Received contact information from chat ID ${update.message.chat.id}`);
+            // The message object itself contains the contact details
+            return update.message;
+        }
+        // Handle other message types (text, audio, photo)
+        // We assume non-contact messages are for expense processing etc.
+        // You might want more specific checks here later (e.g., message.text, message.photo)
         return update.message;
     }
 

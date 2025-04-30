@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors'; // Import cors
 import dotenv from 'dotenv'; // Import dotenv
-
+import ExpenseController from './controllers/expenseController';
 dotenv.config(); // Load environment variables from .env file
 
 import expenseRoutes from './routes/expenseRoutes';
@@ -21,9 +21,12 @@ app.use(bodyParser.json());
 // app.use(bodyParser.urlencoded({ extended: true })); // Keep urlencoded for standard forms if needed
 
 // Routes
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/webhook', webhookRoutes);
-// app.use('/api/auth', authRoutes); // Add auth routes later
+router.post('/expenses', ExpenseController.createExpense);
+router.get('/expenses', ExpenseController.getExpenses);
+router.get('/stats', ExpenseController.getStats); // Stats are user-specific now
+router.get('/expenses/:id', ExpenseController.getExpenseById);
+router.put('/expenses/:id', ExpenseController.updateExpense);
+router.delete('/expenses/:id', ExpenseController.deleteExpense);
 
 // Basic Error Handling (Example - can be expanded)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
