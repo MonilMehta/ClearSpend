@@ -1,14 +1,18 @@
-import { Router } from 'express';
-import ExpenseController from '../controllers/expenseController';
+import express from 'express';
+import expenseController from '../controllers/expenseController';
+import { authenticateUser } from '../middlewares/auth';
 
-const router = Router();
-// Removed duplicate controller instantiation
+const router = express.Router();
 
-router.post('/expenses', ExpenseController.createExpense);
-router.get('/expenses', ExpenseController.getExpenses);
-router.get('/stats', ExpenseController.getStats); // Add stats route
-router.get('/expenses/:id', ExpenseController.getExpenseById);
-router.put('/expenses/:id', ExpenseController.updateExpense);
-router.delete('/expenses/:id', ExpenseController.deleteExpense);
+// All routes are protected with authentication
+router.use(authenticateUser);
+
+// CRUD routes
+router.post('/', expenseController.createExpense);
+router.get('/', expenseController.getExpenses);
+router.get('/stats', expenseController.getStats);
+router.get('/:id', expenseController.getExpenseById);
+router.put('/:id', expenseController.updateExpense);
+router.delete('/:id', expenseController.deleteExpense);
 
 export default router;

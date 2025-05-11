@@ -4,47 +4,47 @@ This document outlines the tasks required to build the ClearSpend application.
 
 ## Backend (Node.js/Express)
 
--   [ ] **Setup & Base:**
-    -   [ ] Initialize Node.js project (`npm init`).
-    -   [ ] Install necessary dependencies (Express, Twilio SDK, dotenv, database ORM/client, etc.).
-    -   [ ] Set up Express server (`server.ts`).
-    -   [ ] Configure environment variables (`.env`) for credentials (Twilio, Database, Google, Telegram).
-    -   [ ] Implement basic error handling middleware.
-    -   [ ] Set up database connection (e.g., MongoDB with Mongoose, PostgreSQL with Prisma/Sequelize).
--   [ ] **Twilio Webhook Handling:**
-    -   [ ] Create webhook endpoint (`/api/twilio/incoming`) to receive messages (POST).
-    -   [ ] Create webhook endpoint (`/api/twilio/status`) for status callbacks (POST).
-    -   [ ] Validate Twilio requests using `twilio.webhook`.
-    -   [ ] Parse incoming message content (link with `nlpService.ts`, `ocrService.ts`, `transcriptionService.ts`).
-    -   [ ] Implement logic to process commands (e.g., "report", "add expense", "set limit").
-    -   [ ] Store relevant message data and user interactions in the database.
--   [ ] **Telegram Bot Handling:**
-    -   [ ] Set up Telegram Bot using a library (e.g., `node-telegram-bot-api`).
-    -   [ ] Create webhook endpoint (`/api/telegram/incoming`) or use polling to receive messages.
-    -   [ ] Validate Telegram requests (if using webhooks).
-    -   [ ] Parse incoming messages and commands.
-    -   [ ] Implement logic mirroring WhatsApp commands.
-    -   [ ] Link Telegram user ID with phone number for cross-platform state.
--   [ ] **User Authentication & Management:**
-    -   [ ] Implement user registration/login API (`/api/auth/login`, `/api/auth/register`).
-    -   [ ] Use JWT or session-based authentication for the dashboard.
-    -   [ ] Define User schema/model (including phone number, linked accounts, limits, etc.).
-    -   [ ] Associate incoming messages (Twilio/Telegram) with registered users based on phone number.
--   [ ] **Core Features API:**
-    -   [ ] API endpoint to fetch user spending data (`/api/expenses`).
-    -   [ ] API endpoint to fetch user statistics (`/api/stats`).
-    -   [ ] API endpoint to set/update spending limits (`/api/limits`).
-    -   [ ] API endpoint to manage linked accounts (Google Sheets).
--   [ ] **Database Models:**
-    -   [ ] User model.
-    -   [ ] Expense model (link to user, amount, category, description, date, source platform).
+-   [x] **Setup & Base:**
+    -   [x] Initialize Node.js project (`npm init`).
+    -   [x] Install necessary dependencies (Express, Twilio SDK, dotenv, database ORM/client, etc.).
+    -   [x] Set up Express server (`server.ts`).
+    -   [x] Configure environment variables (`.env`) for credentials (Twilio, Database, Google, Telegram).
+    -   [x] Implement basic error handling middleware.
+    -   [x] Set up database connection (e.g., MongoDB with Mongoose, PostgreSQL with Prisma/Sequelize).
+-   [x] **Twilio Webhook Handling:**
+    -   [x] Create webhook endpoint (`/api/twilio/incoming`) to receive messages (POST).
+    -   [x] Create webhook endpoint (`/api/twilio/status`) for status callbacks (POST).
+    -   [x] Validate Twilio requests using `twilio.webhook`.
+    -   [x] Parse incoming message content (link with `nlpService.ts`, `ocrService.ts`, `transcriptionService.ts`).
+    -   [x] Implement logic to process commands (e.g., "report", "add expense", "set limit").
+    -   [x] Store relevant message data and user interactions in the database.
+-   [x] **Telegram Bot Handling:**
+    -   [x] Set up Telegram Bot using a library (e.g., `node-telegram-bot-api`).
+    -   [x] Create webhook endpoint (`/api/telegram/incoming`) or use polling to receive messages.
+    -   [x] Validate Telegram requests (if using webhooks).
+    -   [x] Parse incoming messages and commands.
+    -   [x] Implement logic mirroring WhatsApp commands.
+    -   [x] Link Telegram user ID with phone number for cross-platform state.
+-   [x] **User Authentication & Management:**
+    -   [x] Implement user registration/login API (`/api/auth/login`, `/api/auth/register`).
+    -   [x] Use JWT or session-based authentication for the dashboard.
+    -   [x] Define User schema/model (including phone number, linked accounts, limits, etc.).
+    -   [x] Associate incoming messages (Twilio/Telegram) with registered users based on phone number.
+-   [x] **Core Features API:**
+    -   [x] API endpoint to fetch user spending data (`/api/expenses`).
+    -   [x] API endpoint to fetch user statistics (`/api/stats`).
+    -   [x] API endpoint to set/update spending limits (`/api/limits`).
+    -   [x] API endpoint to manage linked accounts (Google Sheets).
+-   [x] **Database Models:**
+    -   [x] User model.
+    -   [x] Expense model (link to user, amount, category, description, date, source platform).
     -   [ ] Message Log model (optional, for debugging).
--   [ ] **Services:**
-    -   [ ] Refine `nlpService.ts` for command parsing.
+-   [x] **Services:**
+    -   [x] Refine `nlpService.ts` for command parsing.
     -   [ ] Refine `ocrService.ts` if image processing is needed.
-    -   [ ] Refine `transcriptionService.ts` if voice messages are handled.
-    -   [ ] Implement `googleSheetsService.ts`.
-    -   [ ] Implement `telegramService.ts`.
+    -   [x] Refine `transcriptionService.ts` if voice messages are handled.
+    -   [x] Implement `googleSheetsService.ts`.
+    -   [x] Implement `telegramService.ts`.
 
 ## Frontend (Next.js)
 

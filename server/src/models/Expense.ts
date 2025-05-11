@@ -1,31 +1,40 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
-import { ExpenseCategory } from '../constants/categories'; // Import categories
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IExpense extends Document {
-    userId: Types.ObjectId; // Link to the User model
+    userId: mongoose.Types.ObjectId;
     amount: number;
-    category: ExpenseCategory; // Use the enum for category
+    category: string;
     description: string;
     date: Date;
-    source: 'whatsapp' | 'telegram' | 'web'; // Track where the expense was added from
-    messageSid?: string; // Optional: Twilio Message SID for reference
     createdAt: Date;
     updatedAt: Date;
 }
 
-const ExpenseSchema: Schema = new Schema({
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    amount: { type: Number, required: true },
-    category: { type: String, required: true, enum: Object.values(ExpenseCategory) }, // Validate against enum
-    description: { type: String, required: true },
-    date: { type: Date, default: Date.now },
-    source: { type: String, required: true, enum: ['whatsapp', 'telegram', 'web'] },
-    messageSid: { type: String },
-}, { timestamps: true }); // Adds createdAt and updatedAt automatically
+const expenseSchema = new Schema<IExpense>({
+    userId: {
+        type: Schema.Types.ObjectId,
+        required: true,
+        ref: 'User'
+    },
+    amount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    category: {
+        type: String,
+        required: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    date: {
+        type: Date,
+        default: Date.now
+    }
+}, {
+    timestamps: true
+});
 
-// Index for common queries
-ExpenseSchema.index({ userId: 1, date: -1 });
-
-const Expense = mongoose.model<IExpense>('Expense', ExpenseSchema);
-
-export default Expense;
+export default mongoose.model<IExpense>('Expense', expenseSchema);

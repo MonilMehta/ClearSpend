@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 import twilio from 'twilio';
 import dotenv from 'dotenv';
-import { config } from '../config'; // Import config
+import  config  from '../config'; // Import config
 
 dotenv.config();
 

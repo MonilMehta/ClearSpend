@@ -20,4 +20,13 @@ router.post(
     webhookController.handleStatusCallback // Use instance method
 );
 
+// TODO: Implement webhook handlers
+router.post('/whatsapp', (req, res) => {
+    res.status(200).send('WhatsApp webhook received');
+});
+
+router.post('/telegram', (req, res) => {
+    res.status(200).send('Telegram webhook received');
+});
+
 export default router;

@@ -1,15 +1,17 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import expenseRoutes from './routes/expenseRoutes';
-import webhookRoutes from './routes/webhookRoutes';
-import config from './config';
-
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const ExpenseController = require('./src/controllers/expenseController');
 dotenv.config();
 
-const app: Express = express();
+const expenseRoutes = require('./src/routes/expenseRoutes');
+const webhookRoutes = require('./src/routes/webhookRoutes');
+// const authRoutes = require('./routes/authRoutes'); // Prepare for auth routes
+const config = require('./src/config');
+
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -19,9 +21,10 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/webhooks', webhookRoutes);
+// app.use('/api/auth', authRoutes);
 
 // Basic Error Handling
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
 });

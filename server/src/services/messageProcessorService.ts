@@ -3,13 +3,12 @@ import { IUser } from '../models/User';
 import { processAudioInputAndSend, sendImageForExpenseExtraction } from './externalApiService';
 // Keep NLP service for text processing fallback or direct text commands
 import { processNlp } from './nlpService'; // Renamed from classifyExpense/extractIntent
-import { sendWhatsAppMessage } from './twilioService'; // To send replies
+import { sendWhatsAppMessage, downloadMedia } from './twilioService'; // To send replies
 import Expense from '../models/Expense'; // To save expenses
 import { CATEGORIES } from '../constants/categories'; // Import categories
 import fs from 'fs'; // Needed for potential temp file handling
 import os from 'os';
 import path from 'path';
-import { downloadMedia } from './twilioService'; // Assuming you have a function to download media
 
 // Placeholder for more complex state management if needed (e.g., Redis)
 const userState: { [key: string]: { lastIntent: string, expecting?: string } } = {};
@@ -81,9 +80,8 @@ export const processMediaMessage = async (user: IUser, mediaUrl: string, mediaCo
 
     let localFilePath: string | null = null;
     try {
-        // 1. Download the media file from Twilio (or other source)
-        // Ensure downloadMedia returns the local path where the file is saved
-        localFilePath = await downloadMedia(mediaUrl, messageSid, mediaContentType);
+        // Download the media file
+        localFilePath = await downloadMedia(mediaUrl);
         if (!localFilePath) {
             throw new Error('Failed to download media.');
         }
@@ -92,7 +90,7 @@ export const processMediaMessage = async (user: IUser, mediaUrl: string, mediaCo
         let apiResponse: any = null; // Use a more specific type if possible
         let replyMessage = "";
 
-        // 2. Process based on content type
+        // Process based on content type
         if (mediaContentType.startsWith('image/')) {
             console.log('Sending image to /extract_expense API...');
             apiResponse = await sendImageForExpenseExtraction(localFilePath);
@@ -115,7 +113,7 @@ export const processMediaMessage = async (user: IUser, mediaUrl: string, mediaCo
         console.error(`Error processing media message SID ${messageSid}: ${error.message}`);
         return 'Sorry, there was an error processing the media file.';
     } finally {
-        // 3. Clean up the downloaded file
+        // Clean up the downloaded file
         if (localFilePath && fs.existsSync(localFilePath)) {
             try {
                 fs.unlinkSync(localFilePath);

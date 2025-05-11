@@ -1,13 +1,11 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
-import { config } from '../config'; // Assuming config holds the URLs
+import config from '../config';
 
 // Define the base URLs for the external APIs
-// It's better to get these from config/environment variables
-const MESSAGE_API_URL = process.env.MESSAGE_API_URL || config.externalApi?.messageUrl || 'https://monilm-clearspend.hf.space/message';
-const EXTRACT_EXPENSE_API_URL = process.env.EXTRACT_EXPENSE_API_URL || config.externalApi?.extractExpenseUrl || 'https://monilm-clearspend.hf.space/extract_expense';
-// Note: No direct audio API call here as per refined plan (Whisper first, then message API)
+const MESSAGE_API_URL = config.externalApi.messageUrl;
+const EXTRACT_EXPENSE_API_URL = config.externalApi.extractExpenseUrl;
 
 if (!MESSAGE_API_URL) {
     console.warn('MESSAGE_API_URL is not defined. Calls to the message API will fail.');
@@ -45,7 +43,7 @@ export const sendMessageApi = async (text: string): Promise<any> => {
  * @param imagePath The local path to the image file.
  * @returns Promise<any> The response data from the API.
  */
-export const sendImageForExpenseExtractionApi = async (imagePath: string): Promise<any> => {
+export const sendImageForExpenseExtraction = async (imagePath: string): Promise<any> => {
     if (!EXTRACT_EXPENSE_API_URL) {
         throw new Error('Expense Extraction API Service is not configured.');
     }
@@ -72,5 +70,32 @@ export const sendImageForExpenseExtractionApi = async (imagePath: string): Promi
         console.error(`Error calling Extract Expense API: ${error.message}`, error.response?.data || '');
         // Re-throw or return a specific error structure
         throw new Error(`Failed to process image with Extract Expense API: ${error.message}`);
+    }
+};
+
+/**
+ * Processes audio input and sends it to the message API.
+ */
+export const processAudioInputAndSend = async (audioPath: string): Promise<any> => {
+    if (!fs.existsSync(audioPath)) {
+        throw new Error(`Audio file not found at path: ${audioPath}`);
+    }
+
+    const form = new FormData();
+    form.append('file', fs.createReadStream(audioPath));
+
+    try {
+        console.log(`Processing audio file: ${audioPath}`);
+        const response = await axios.post(MESSAGE_API_URL, form, {
+            headers: {
+                ...form.getHeaders(),
+            },
+        });
+
+        console.log('Audio Processing Response:', response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error processing audio: ${error.message}`, error.response?.data || '');
+        throw new Error(`Failed to process audio: ${error.message}`);
     }
 };

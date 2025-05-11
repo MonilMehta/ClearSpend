@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { config } from '../config'; // To get API URLs
+import  config  from '../config'; // To get API URLs
 import { CATEGORIES } from '../constants/categories';
 
 // Define interfaces for clarity (matching the expected API response)
