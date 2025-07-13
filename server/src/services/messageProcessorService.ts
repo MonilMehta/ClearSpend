@@ -4,7 +4,8 @@ import { processAudioInputAndSend, sendImageForExpenseExtraction } from './exter
 // Keep NLP service for text processing fallback or direct text commands
 import { processNlp } from './nlpService'; // Renamed from classifyExpense/extractIntent
 import { sendWhatsAppMessage, downloadMedia } from './twilioService'; // To send replies
-import Expense from '../models/Expense'; // To save expenses
+import prisma from '../config/database'; // Import Prisma client
+import { Decimal } from '@prisma/client/runtime/library';
 import { CATEGORIES } from '../constants/categories'; // Import categories
 import fs from 'fs'; // Needed for potential temp file handling
 import os from 'os';
@@ -34,16 +35,16 @@ export const processTextMessage = async (user: IUser, message: string, messageSi
                     const description = nlpResult.entities.description || message;
 
                     // Save the expense
-                    const newExpense = new Expense({
-                        userId: user._id,
-                        amount: amount,
-                        category: category,
-                        description: description,
-                        date: new Date(), // Use current date for now
-                        source: 'whatsapp', // Or determine source dynamically
-                        messageSid: messageSid,
+                    const newExpense = await prisma.expense.create({
+                        data: {
+                            userId: user.id,
+                            amount: new Decimal(amount),
+                            category: category,
+                            description: description,
+                            date: new Date(), // Use current date for now
+                        }
                     });
-                    await newExpense.save();
+                    
                     return `✅ Logged: ${amount.toFixed(2)} for ${description} (Category: ${category}).`;
                 } else {
                     return "Okay, I see you want to add an expense, but I couldn't find the amount. Can you please include it?";
@@ -94,14 +95,56 @@ export const processMediaMessage = async (user: IUser, mediaUrl: string, mediaCo
         if (mediaContentType.startsWith('image/')) {
             console.log('Sending image to /extract_expense API...');
             apiResponse = await sendImageForExpenseExtraction(localFilePath);
-            // TODO: Parse the apiResponse and potentially log an expense or reply
-            replyMessage = apiResponse ? `Received image. API response: ${JSON.stringify(apiResponse)}` : 'Could not process image via API.';
+            
+            // Process the image response and create expense if successful
+            if (apiResponse && apiResponse.success) {
+                const { amount, category, description } = apiResponse.expense || {};
+                
+                if (amount) {
+                    const newExpense = await prisma.expense.create({
+                        data: {
+                            userId: user.id,
+                            amount: new Decimal(amount),
+                            category: category || 'Receipt',
+                            description: description || 'Expense from receipt',
+                            date: new Date(),
+                        }
+                    });
+                    
+                    replyMessage = `✅ Receipt processed! Logged: $${amount} for ${description} (Category: ${category || 'Receipt'})`;
+                } else {
+                    replyMessage = `📄 I can see this is a receipt, but I couldn't extract the expense details. Can you tell me the amount manually?`;
+                }
+            } else {
+                replyMessage = apiResponse?.message || 'Could not process the receipt. Please try again or enter the expense manually.';
+            }
 
         } else if (mediaContentType.startsWith('audio/')) {
             console.log('Processing audio via Whisper and /message API...');
             apiResponse = await processAudioInputAndSend(localFilePath);
-            // TODO: Parse the apiResponse and potentially log an expense or reply based on the text processing result
-            replyMessage = apiResponse ? `Processed audio. API response: ${JSON.stringify(apiResponse)}` : 'Could not process audio via API.';
+            
+            // Process audio response - should contain transcribed text and expense info
+            if (apiResponse && apiResponse.success) {
+                const { amount, category, description, transcription } = apiResponse;
+                
+                if (amount) {
+                    const newExpense = await prisma.expense.create({
+                        data: {
+                            userId: user.id,
+                            amount: new Decimal(amount),
+                            category: category || 'Voice Note',
+                            description: description || transcription || 'Voice expense',
+                            date: new Date(),
+                        }
+                    });
+                    
+                    replyMessage = `🎤 Voice message processed! Logged: $${amount} for ${description} (Category: ${category || 'Voice Note'})`;
+                } else {
+                    replyMessage = `🎤 I heard: "${apiResponse.transcription || 'unclear audio'}" but couldn't find expense details. Can you clarify the amount?`;
+                }
+            } else {
+                replyMessage = apiResponse?.message || 'Could not process the audio. Please try again or type your expense.';
+            }
 
         } else {
             replyMessage = `Received media (${mediaContentType}), but I can only process images and audio for now.`;

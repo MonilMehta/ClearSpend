@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import twilio from 'twilio';
 // import querystring from 'querystring'; // No longer needed here, parsed in middleware
-import User from '../models/User'; // Import User model
+import prisma from '../config/database'; // Import Prisma client
 import { processTextMessage, processMediaMessage } from '../services/messageProcessorService'; // Use the new service
 
 const { MessagingResponse } = twilio.twiml;
@@ -34,16 +34,25 @@ class WebhookController {
             // --- User Handling ---
             const standardizedPhoneNumber = from.startsWith('whatsapp:') ? from.substring(9) : from;
 
-            let user = await User.findOne({ phoneNumber: standardizedPhoneNumber });
+            let user = await prisma.user.findUnique({ 
+                where: { phoneNumber: standardizedPhoneNumber } 
+            });
+            
             if (!user) {
                 console.log(`New user detected: ${standardizedPhoneNumber}. Creating user.`);
                 // Add basic validation or default name if desired
-                user = new User({ phoneNumber: standardizedPhoneNumber, name: 'New User' });
-                await user.save();
+                user = await prisma.user.create({
+                    data: {
+                        phoneNumber: standardizedPhoneNumber,
+                        name: 'New User'
+                    }
+                });
             } else {
                  // Optional: Update user last seen or other info
-                 user.updatedAt = new Date();
-                 await user.save();
+                 user = await prisma.user.update({
+                     where: { id: user.id },
+                     data: { updatedAt: new Date() }
+                 });
             }
 
 

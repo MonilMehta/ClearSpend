@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Expense from '../models/Expense';
+import prisma from '../config/database';
 
 class ReportController {
     async getReports(req: Request, res: Response) {
@@ -7,14 +7,17 @@ class ReportController {
             // TODO: Add user filtering based on authentication
             // TODO: Add date range and other filtering options (e.g., req.query)
 
-            const expenses = await Expense.find({}).sort({ date: -1 }); // Fetch all for now, sorted by date
+            const expenses = await prisma.expense.findMany({
+                orderBy: { date: 'desc' }
+            }); // Fetch all for now, sorted by date
 
             // Basic report structure - can be expanded significantly
-            const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const totalAmount = expenses.reduce((sum: number, expense: any) => sum + Number(expense.amount), 0);
             const count = expenses.length;
             const expensesByCategory: { [key: string]: number } = {};
-            expenses.forEach(expense => {
-                expensesByCategory[expense.category] = (expensesByCategory[expense.category] || 0) + expense.amount;
+            expenses.forEach((expense: any) => {
+                const categoryTotal = expensesByCategory[expense.category] || 0;
+                expensesByCategory[expense.category] = categoryTotal + Number(expense.amount);
             });
 
             const report = {

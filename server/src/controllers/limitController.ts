@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import User from '../models/User';
+import prisma from '../config/database';
+import { Decimal } from '@prisma/client/runtime/library';
 
 class LimitController {
     async updateLimit(req: Request, res: Response) {
@@ -12,11 +13,10 @@ class LimitController {
             }
 
             // In a real app, get authenticated user ID instead of from params
-            const user = await User.findByIdAndUpdate(
-                userId,
-                { monthlyLimit },
-                { new: true, runValidators: true } // Return updated doc, run schema validators
-            );
+            const user = await prisma.user.update({
+                where: { id: userId },
+                data: { monthlyLimit: new Decimal(monthlyLimit) }
+            });
 
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });

@@ -1,11 +1,11 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import expenseRoutes from './routes/expenseRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import config from './config';
+import prisma from './config/database';
 
 dotenv.config();
 
@@ -26,21 +26,24 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     res.status(500).send('Something broke!');
 });
 
-// Connect to MongoDB
-const mongoUri = process.env.MONGODB_URI;
-if (!mongoUri) {
-    console.error('FATAL ERROR: MONGODB_URI is not defined in .env file.');
-    process.exit(1);
-}
-
-mongoose.connect(mongoUri)
-    .then(() => {
-        console.log('MongoDB connected');
+// Test database connection and start server
+async function startServer() {
+    try {
+        await prisma.$connect();
+        console.log('Database connected successfully');
+        
         app.listen(PORT, () => {
             console.log(`Server is running on http://localhost:${PORT}`);
         });
-    })
-    .catch(err => {
-        console.error('MongoDB connection error:', err);
+    } catch (error) {
+        console.error('Database connection error:', error);
         process.exit(1);
-    }); 
+    }
+}
+
+// Graceful shutdown
+process.on('beforeExit', async () => {
+    await prisma.$disconnect();
+});
+
+startServer(); 

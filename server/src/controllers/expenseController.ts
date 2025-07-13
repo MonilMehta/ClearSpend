@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import Expense from '../models/Expense';
-import { Types } from 'mongoose'; // Import Types
+import prisma from '../config/database';
+import { Decimal } from '@prisma/client/runtime/library';
 
 // Extend Request type to include user (assuming auth middleware adds it)
 interface AuthenticatedRequest extends Request {
-    user?: { id: string | Types.ObjectId }; // Adjust based on your auth middleware
+    user?: { id: string }; // Adjust based on your auth middleware
 }
 
 class ExpenseController {
@@ -15,8 +15,17 @@ class ExpenseController {
             }
             const userId = req.user.id;
             const { amount, category, description, date } = req.body;
-            const expense = new Expense({ userId, amount, category, description, date: date || new Date() });
-            await expense.save();
+            
+            const expense = await prisma.expense.create({
+                data: {
+                    userId,
+                    amount: new Decimal(amount),
+                    category,
+                    description,
+                    date: date ? new Date(date) : new Date()
+                }
+            });
+            
             res.status(201).json(expense);
         } catch (error) {
             res.status(500).json({ message: 'Error creating expense', error });
@@ -30,7 +39,11 @@ class ExpenseController {
             }
             const userId = req.user.id;
             // TODO: Add pagination, filtering (date range, category) from query params
-            const expenses = await Expense.find({ userId: userId }).sort({ date: -1 });
+            const expenses = await prisma.expense.findMany({
+                where: { userId },
+                orderBy: { date: 'desc' }
+            });
+            
             res.status(200).json(expenses);
         } catch (error) {
             res.status(500).json({ message: 'Error retrieving expenses', error });
@@ -44,7 +57,14 @@ class ExpenseController {
             }
             const userId = req.user.id;
             const { id } = req.params;
-            const expense = await Expense.findOne({ _id: id, userId: userId });
+            
+            const expense = await prisma.expense.findFirst({
+                where: { 
+                    id,
+                    userId 
+                }
+            });
+            
             if (!expense) {
                 return res.status(404).json({ message: 'Expense not found or access denied' });
             }
@@ -62,15 +82,30 @@ class ExpenseController {
             const userId = req.user.id;
             const { id } = req.params;
             const { amount, category, description, date } = req.body;
-            const expense = await Expense.findOneAndUpdate(
-                { _id: id, userId: userId }, // Ensure user owns the expense
-                { amount, category, description, date },
-                { new: true, runValidators: true }
-            );
-            if (!expense) {
+            
+            const expense = await prisma.expense.updateMany({
+                where: { 
+                    id,
+                    userId 
+                },
+                data: {
+                    amount: amount ? new Decimal(amount) : undefined,
+                    category,
+                    description,
+                    date: date ? new Date(date) : undefined
+                }
+            });
+            
+            if (expense.count === 0) {
                 return res.status(404).json({ message: 'Expense not found or access denied' });
             }
-            res.status(200).json(expense);
+            
+            // Fetch the updated expense to return it
+            const updatedExpense = await prisma.expense.findFirst({
+                where: { id, userId }
+            });
+            
+            res.status(200).json(updatedExpense);
         } catch (error) {
             res.status(500).json({ message: 'Error updating expense', error });
         }
@@ -83,10 +118,18 @@ class ExpenseController {
             }
             const userId = req.user.id;
             const { id } = req.params;
-            const expense = await Expense.findOneAndDelete({ _id: id, userId: userId });
-            if (!expense) {
+            
+            const expense = await prisma.expense.deleteMany({
+                where: { 
+                    id,
+                    userId 
+                }
+            });
+            
+            if (expense.count === 0) {
                 return res.status(404).json({ message: 'Expense not found or access denied' });
             }
+            
             res.status(204).send();
         } catch (error) {
             res.status(500).json({ message: 'Error deleting expense', error });
@@ -100,14 +143,19 @@ class ExpenseController {
             }
             const userId = req.user.id;
             // TODO: Add date range filtering from query params
-            const expenses = await Expense.find({ userId: userId });
+            const expenses = await prisma.expense.findMany({
+                where: { userId }
+            });
 
-            const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const totalAmount = expenses.reduce((sum: number, expense: any) => {
+                return sum + Number(expense.amount);
+            }, 0);
             const count = expenses.length;
             // Add more stats calculations as needed (e.g., by category)
              const expensesByCategory: { [key: string]: number } = {};
-            expenses.forEach(expense => {
-                expensesByCategory[expense.category] = (expensesByCategory[expense.category] || 0) + expense.amount;
+            expenses.forEach((expense: any) => {
+                const categoryTotal = expensesByCategory[expense.category] || 0;
+                expensesByCategory[expense.category] = categoryTotal + Number(expense.amount);
             });
 
             const stats = {
@@ -121,8 +169,6 @@ class ExpenseController {
             res.status(500).json({ message: 'Error retrieving stats', error });
         }
     }
-
-    // updateExpense method was already present and is updated above
 }
 
 export default new ExpenseController();
